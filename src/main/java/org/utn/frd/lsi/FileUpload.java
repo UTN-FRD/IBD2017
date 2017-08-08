@@ -53,6 +53,11 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import java.util.Map;
+import java.io.*;
+import java.util.*;
+
+
 @Path("/files")
 public class FileUpload {
 
@@ -121,7 +126,7 @@ public class FileUpload {
 
 		    //Si va ecxelcnv lo ejecuto
 		    if (excelcnv) {
-		      //ProcStage=ExcelCnv(TempPath, ProcStage, Resource);
+		      ProcStage=ExcelCnv(TempPath, ProcStage, Resource);
 		    }
 		    
 		    //Si va tika lo ejecuto
@@ -175,18 +180,33 @@ public class FileUpload {
 
 	}
 
+	
 	//Convierte excel de BIFF5 a un formato que pueda ser leido por Tika
 	private String ExcelCnv(String temppath, String procstage, String resource)
 	{
-		Pattern pattern = Pattern.compile("(\\d*\\.*(?:\\d|E)+)\\s+(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+(\\d{2}:\\d{2}:\\d{2})\\s+([A-Z])\\s+([0-9]+)\\s+(\\d+\\.\\d+)\\s+([^\\s]+)\\s+(.{5,30})\\s+(\\d+\\.\\d+)\\s+(\\b(?:[A-Z]|\\s){1,30}\\b)\\s+(\\b[^\\d]{1,15}\\b)", Pattern.DOTALL);
-		Matcher matcher = pattern.matcher("content");
-		String result = "";
-	
-		while(matcher.find()){
-			for(int g = 1; g<=matcher.groupCount(); g++){
-				result = result + (matcher.group(g)+"|");
-			}
-		}
+	  List<String> commands = new ArrayList<String>();
+	  String s = null;
+	  String result = "";
+	  String error = "";
+
+	  //commands.add("C:\\Program Files (x86)\\Microsoft Office\\Office12\\excelcnv");
+	  commands.add("C:\\Program Files (x86)\\Microsoft Office\\Office15\\excelcnv");
+	  commands.add("-oice");
+	  commands.add(temppath + "O" + resource);
+	  commands.add(temppath + "C" + resource);
+
+	  try {
+	    ProcessBuilder pb = new ProcessBuilder(commands);
+	    Process process = pb.start();
+
+	    BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+	    BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+	    while ((s = stdInput.readLine()) != null) {result=result+s+"\n";}
+	    while ((s = stdError.readLine()) != null) {error=error+s+"\n";}
+
+	  } catch (IOException e) {
+      }
 		return "C";
 	}
 	
