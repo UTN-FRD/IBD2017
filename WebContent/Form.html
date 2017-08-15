@@ -10,9 +10,10 @@
   <script src="Scripts/CryptoJS/components/sha1.js"></script>
   
   <script type="text/javascript">
- 
+  
+  //Inicio Genera SHA1
   function process(vfile) {
-	  getMD5(
+	  getSHA1(
 	    vfile,
 	    prog => console.log("Progress: " + prog)
 	  ).then(
@@ -54,7 +55,7 @@
 	  readNext();
 	}
 
-	function getMD5(blob, cbProgress) {
+	function getSHA1(blob, cbProgress) {
 	  return new Promise((resolve, reject) => {
 	    var sha1 = CryptoJS.algo.SHA1.create();
 	    readChunked(blob, (chunk, offs, total) => {
@@ -74,7 +75,9 @@
 	    });
 	  });
 	}
-  
+	//Fin Genera SHA1
+	
+	//Actualizacion de progreso
 	function updateProgress(evt) {
 	    //console.log('updateProgress');
 	    if (evt.lengthComputable) {
@@ -87,7 +90,7 @@
 	            document.getElementById('progress').innerHTML='unable to complete';
 	    }
 	}
-	
+	//Fin Actualizacion de progreso
   
   $(document).ready(function() 
   {
