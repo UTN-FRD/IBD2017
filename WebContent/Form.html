@@ -1,13 +1,147 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>Form test</title>
-</head>
-<body>
-<h1>Subir Archivo</h1>
 
-	<form action="rest/files/upload" method="post" enctype="multipart/form-data">
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  <meta content="utf-8" http-equiv="encoding" />
+
+  <script src="Scripts/jquery-2.1.1.min.js"></script>
+  <script src="Scripts/CryptoJS/components/core.js"></script>
+  <script src="Scripts/CryptoJS/components/sha1.js"></script>
+  
+  <script type="text/javascript">
+ 
+  function process(vfile) {
+	  getMD5(
+	    vfile,
+	    prog => console.log("Progress: " + prog)
+	  ).then(
+	    res => console.log(res),
+	    err => console.error(err)
+	  );
+	}
+
+	function readChunked(file, chunkCallback, endCallback) {
+	  var fileSize   = file.size;
+	  var chunkSize  = 4 * 1024 * 1024; // 4MB
+	  var offset     = 0;
+	  
+	  var reader = new FileReader();
+	  reader.onload = function() {
+	    if (reader.error) {
+	      endCallback(reader.error || {});
+	      return;
+	    }
+	    offset += reader.result.length;
+	    // callback for handling read chunk
+	    // TODO: handle errors
+	    chunkCallback(reader.result, offset, fileSize); 
+	    if (offset >= fileSize) {
+	      endCallback(null);
+	      return;
+	    }
+	    readNext();
+	  };
+
+	  reader.onerror = function(err) {
+	    endCallback(err || {});
+	  };
+
+	  function readNext() {
+	    var fileSlice = file.slice(offset, offset + chunkSize);
+	    reader.readAsBinaryString(fileSlice);
+	  }
+	  readNext();
+	}
+
+	function getMD5(blob, cbProgress) {
+	  return new Promise((resolve, reject) => {
+	    var sha1 = CryptoJS.algo.SHA1.create();
+	    readChunked(blob, (chunk, offs, total) => {
+	      sha1.update(CryptoJS.enc.Latin1.parse(chunk));
+	      if (cbProgress) {
+	        cbProgress(offs / total);
+	      }
+	    }, err => {
+	      if (err) {
+	        reject(err);
+	      } else {
+	        // TODO: Handle errors
+	        var hash = sha1.finalize();
+	        var hashHex = hash.toString(CryptoJS.enc.Hex);
+	        resolve(hashHex);
+	      }
+	    });
+	  });
+	}
+  
+	function updateProgress(evt) {
+	    //console.log('updateProgress');
+	    if (evt.lengthComputable) {
+	            var percentComplete = Math.trunc((evt.loaded / evt.total) * 100);
+	            //console.log(percentComplete);
+	            document.getElementById('progress').innerHTML='Cargado: ' + percentComplete + '%';
+	    } else {
+	            // Unable to compute progress information since the total size is unknown
+	            //console.log('unable to complete');
+	            document.getElementById('progress').innerHTML='unable to complete';
+	    }
+	}
+	
+  
+  $(document).ready(function() 
+  {
+    $("#uploadBtn").click(function() 
+    {
+      $('input[name="file"]').each(function(index, value) 
+      { 
+        var file = value.files[0];
+        if(file) 
+        {
+          var formData = new FormData($('#upload_form')[0]);
+          formData.append('file', file);
+          
+
+          
+          process(file);
+          
+
+          $.ajax({
+            url : 'rest/files/upload',
+            type : 'POST',
+            data : formData,
+            cache : false,
+            
+            xhr : function() {  // custom xhr
+                myXhr = $.ajaxSettings.xhr();
+                if(myXhr.upload){ // check if upload property exists
+                    myXhr.upload.addEventListener('progress', updateProgress, false); // for handling the progress of the upload
+                }
+                return myXhr;
+            },
+            
+            contentType : false,
+            processData : false,
+            
+            success : function(data, textStatus, jqXHR) {
+                  var message = jqXHR.responseText;
+                  $("#messages").append("<li>" + message + "</li>");
+            },
+            error : function(jqXHR, textStatus, errorThrown) {
+                  $("#messages").append("<li style='color: red;'>" + textStatus + "</li>");
+            }
+          });
+        }
+      });
+    });
+  });
+  </script>
+
+</head>
+
+<body>
+
+	<form action="rest/files/upload" method="post" enctype="multipart/form-data" id="upload_form">
       ID_Investigacion:<br>
       <input type="text" name="idinvestigacion" value="1"><br>
       ID_Archivo:<br>
@@ -28,9 +162,15 @@
       </select><br>
 	  Archivo:<br>
       Seleccione el archivo: <input type="file" name="file" size="50" />
+      
+       <input id="uploadBtn" type="button" value="Upload File" />
 
-	   <input type="submit" value="Upload It" />
 	</form>
+     
+    <h1 id="progress">Cargado: 0%</h1>
+     
+    <ul id="messages">    
+    </ul>
 
 </body>
 </html>

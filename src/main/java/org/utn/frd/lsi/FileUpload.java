@@ -57,6 +57,9 @@ import java.util.Map;
 import java.io.*;
 import java.util.*;
 
+import java.security.MessageDigest;
+
+
 
 @Path("/files")
 public class FileUpload {
@@ -72,7 +75,7 @@ public class FileUpload {
 			@FormDataParam("file") FormDataContentDisposition contentDispositionHeader,
 			@FormDataParam("idinvestigacion") String idinvestigacion,
 			@FormDataParam("idarchivo") String idarchivo,
-			@FormDataParam("hash") String hash,
+			@FormDataParam("hash") String clienthash,
 			@FormDataParam("formato") String formato) {
 
 		String FileName=contentDispositionHeader.getFileName();
@@ -80,6 +83,7 @@ public class FileUpload {
 		String TempPath=SERVER_UPLOAD_LOCATION_FOLDER;
 		String ProcStage=null;
 		String Resource=null;
+		String serverhash=null;
 		
 		String res=null;
 		String trace=null;
@@ -91,7 +95,7 @@ public class FileUpload {
 		DateFormat hourdateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		
 		time_start=System.currentTimeMillis();
-	    Resource=idinvestigacion + "_" + hash;
+	    Resource=idinvestigacion + "_" + clienthash;
 	    ProcStage="O";		
 		
 		//Pregunto si existe en la base para la investigacion, si existe envio error.
@@ -124,6 +128,9 @@ public class FileUpload {
 		    //Guardo el archivo como "O" + idinvestigacion + "_" + hash
 		    SaveFile(fileInputStream, TempPath + ProcStage + Resource);
 
+		    //Genero y comparo hash
+		    serverhash=getSha1(TempPath + ProcStage + Resource);
+		    
 		    //Si va ecxelcnv lo ejecuto
 		    if (excelcnv) {
 		      ProcStage=ExcelCnv(TempPath, ProcStage, Resource);
@@ -161,7 +168,7 @@ public class FileUpload {
 		    time_end = System.currentTimeMillis();
 		    
 		    //Guardo detalles del proceso en id de archivo
-		    res="Read: " + dl.getReadCount() + " - Proc: " + dl.getProcCount() + " - Insert: " + dl.getInsertCount() + " time: " + ( time_end - time_start );
+		    res="hash: " + serverhash + " - Read: " + dl.getReadCount() + " - Proc: " + dl.getProcCount() + " - Insert: " + dl.getInsertCount() + " time: " + ( time_end - time_start );
 		    //res=System.getProperty("user.dir");
 		  } catch(IOException e) {
 			  res="error IO " + e.getMessage();
@@ -180,6 +187,31 @@ public class FileUpload {
 
 	}
 
+	
+
+    public String getSha1(String resourceLocation)throws Exception
+	{
+	    MessageDigest md = MessageDigest.getInstance("SHA-1");
+	    FileInputStream fis = new FileInputStream(resourceLocation);
+
+	    byte[] dataBytes = new byte[1024];
+
+	    int nread = 0;
+	    while ((nread = fis.read(dataBytes)) != -1) {
+	      md.update(dataBytes, 0, nread);
+	    };
+	    byte[] mdbytes = md.digest();
+
+	    //convierte byte a hex
+	    StringBuffer sb = new StringBuffer();
+	    for (int i = 0; i < mdbytes.length; i++) {
+	      sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
+	    }
+
+		fis.close();
+		
+		return sb.toString();
+	}
 	
 	//Convierte excel de BIFF5 a un formato que pueda ser leido por Tika
 	private String ExcelCnv(String temppath, String procstage, String resource)
