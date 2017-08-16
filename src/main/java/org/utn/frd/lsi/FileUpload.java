@@ -118,10 +118,7 @@ public class FileUpload {
 		    usetika=Boolean.parseBoolean(eGlobal.getElementsByTagName("usetika").item(0).getTextContent());
 		    dncelda=Boolean.parseBoolean(eGlobal.getElementsByTagName("dncelda").item(0).getTextContent());
 		    dntitular=Boolean.parseBoolean(eGlobal.getElementsByTagName("dntitular").item(0).getTextContent());
-      
-		    //Creo reguistro de archivo
-		    idarchivo="1";
-		  
+      	  
 		    //Paso a Resource idinvestigacion + "_" + hash y guardo stage
 
 		  
@@ -168,7 +165,7 @@ public class FileUpload {
 		    time_end = System.currentTimeMillis();
 		    
 		    //Guardo detalles del proceso en id de archivo
-		    res="hash: " + serverhash + " - Read: " + dl.getReadCount() + " - Proc: " + dl.getProcCount() + " - Insert: " + dl.getInsertCount() + " time: " + ( time_end - time_start );
+		    res="inv: " + idinvestigacion + " arch: " + idarchivo + " hash: " + serverhash + " - Read: " + dl.getReadCount() + " - Proc: " + dl.getProcCount() + " - Insert: " + dl.getInsertCount() + " time: " + ( time_end - time_start )/1000.0 + " seg";
 		    //res=System.getProperty("user.dir");
 		  } catch(IOException e) {
 			  res="error IO " + e.getMessage();

@@ -12,12 +12,12 @@
   <script type="text/javascript">
   
   //Inicio Genera SHA1
-  function process(vfile) {
+  function genChecksum(vfile) {
 	  getSHA1(
 	    vfile,
-	    prog => console.log("Progress: " + prog)
+	    prog => document.getElementById('progress').innerHTML='CheckSum: ' + Math.trunc(prog * 100) + '%'
 	  ).then(
-	    res => console.log(res),
+	    res => RegFile(vfile, res),
 	    err => console.error(err)
 	  );
 	}
@@ -77,7 +77,7 @@
 	}
 	//Fin Genera SHA1
 	
-	//Actualizacion de progreso
+	//Actualizacion de progreso carga
 	function updateProgress(evt) {
 	    //console.log('updateProgress');
 	    if (evt.lengthComputable) {
@@ -90,24 +90,26 @@
 	            document.getElementById('progress').innerHTML='unable to complete';
 	    }
 	}
-	//Fin Actualizacion de progreso
-  
-  $(document).ready(function() 
-  {
-    $("#uploadBtn").click(function() 
-    {
-      $('input[name="file"]').each(function(index, value) 
-      { 
-        var file = value.files[0];
-        if(file) 
-        {
-          var formData = new FormData($('#upload_form')[0]);
-          formData.append('file', file);
-          
+	//Fin Actualizacion de progreso carga
 
-          
-          process(file);
-          
+	//Inicio registro de archivo
+	function RegFile(file, hash) {
+		var idinvestigacion, idarchivo;
+		
+		idinvestigacion=document.getElementById('idinvestigacion').value;
+		idarchivo=4;
+		//servicio de registracion
+		UploadFile(file, hash, idinvestigacion, idarchivo);
+	}
+	//Fin registro de archivo
+	
+	//Inicio upload file
+	function UploadFile(file, hash, idinvestigacion, idarchivo) 
+    {
+          var formData = new FormData($('#upload_form')[0]);
+          formData.append('idinvestigacion', idinvestigacion);
+          formData.append('idarchivo', idarchivo);
+          formData.append('file', file);
 
           $.ajax({
             url : 'rest/files/upload',
@@ -134,23 +136,33 @@
                   $("#messages").append("<li style='color: red;'>" + textStatus + "</li>");
             }
           });
-        }
+    }
+	//Fin upload file
+	
+	//Inicio Manejador del evento submit del form
+  $(document).ready(function() 
+  {
+    $("#uploadBtn").click(function() 
+    {
+      $('input[name="file"]').each(function(index, value) 
+      {    
+  	    var file = value.files[0];
+        if(file) {genChecksum(file);}  
+
       });
     });
   });
+  //Fin Manejador del evento submit del form
   </script>
 
 </head>
 
 <body>
 
+    ID_Investigacion:<br>
+    <input type="text" id="idinvestigacion" value="1"><br>
+
 	<form action="rest/files/upload" method="post" enctype="multipart/form-data" id="upload_form">
-      ID_Investigacion:<br>
-      <input type="text" name="idinvestigacion" value="1"><br>
-      ID_Archivo:<br>
-      <input type="text" name="idarchivo" value="1"><br>
-      Hash:<br>
-      <input type="text" name="hash" value="a85bc6f46b10357ad597888f97c1b7b8"><br>
       Formato:<br>
       <select name="formato">
         <option value="IBD Longitud Fija">IBD Longitud Fija</option>
