@@ -1,7 +1,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  <meta content="utf-8" http-equiv="encoding" />
 	<title>Cargar Archivo</title>
 	<link href="Styles/BootstrapCss/bootstrap.css" rel="stylesheet" />
 	<link href="Styles/BootstrapCss/bootstrap-select.css" rel="stylesheet" />
@@ -33,6 +35,156 @@
 	<script src="Scripts/Bootstrap/jquery.bootstrap.wizard.js"></script>
 	<script src="Scripts/Bootstrap/prettify.js"></script>
 	<script src="Scripts/Bootstrap/bootstrap-datepicker.js"></script>
+	
+	<script src="Scripts/CryptoJS/components/core.js"></script>
+	<script src="Scripts/CryptoJS/components/sha1.js"></script>
+
+	<script type="text/javascript">
+  
+  //Inicio Genera SHA1
+  function genChecksum(vfile) {
+	  getSHA1(
+	    vfile,
+	    prog => document.getElementById('progress').innerHTML='CheckSum: ' + Math.trunc(prog * 100) + '%'
+	  ).then(
+	    res => RegFile(vfile, res),
+	    err => console.error(err)
+	  );
+	}
+
+	function readChunked(file, chunkCallback, endCallback) {
+	  var fileSize   = file.size;
+	  var chunkSize  = 4 * 1024 * 1024; // 4MB
+	  var offset     = 0;
+	  
+	  var reader = new FileReader();
+	  reader.onload = function() {
+	    if (reader.error) {
+	      endCallback(reader.error || {});
+	      return;
+	    }
+	    offset += reader.result.length;
+	    // callback for handling read chunk
+	    // TODO: handle errors
+	    chunkCallback(reader.result, offset, fileSize); 
+	    if (offset >= fileSize) {
+	      endCallback(null);
+	      return;
+	    }
+	    readNext();
+	  };
+
+	  reader.onerror = function(err) {
+	    endCallback(err || {});
+	  };
+
+	  function readNext() {
+	    var fileSlice = file.slice(offset, offset + chunkSize);
+	    reader.readAsBinaryString(fileSlice);
+	  }
+	  readNext();
+	}
+
+	function getSHA1(blob, cbProgress) {
+	  return new Promise((resolve, reject) => {
+	    var sha1 = CryptoJS.algo.SHA1.create();
+	    readChunked(blob, (chunk, offs, total) => {
+	      sha1.update(CryptoJS.enc.Latin1.parse(chunk));
+	      if (cbProgress) {
+	        cbProgress(offs / total);
+	      }
+	    }, err => {
+	      if (err) {
+	        reject(err);
+	      } else {
+	        // TODO: Handle errors
+	        var hash = sha1.finalize();
+	        var hashHex = hash.toString(CryptoJS.enc.Hex);
+	        resolve(hashHex);
+	      }
+	    });
+	  });
+	}
+	//Fin Genera SHA1
+	
+	//Actualizacion de progreso carga
+	function updateProgress(evt) {
+	    //console.log('updateProgress');
+	    if (evt.lengthComputable) {
+	            var percentComplete = Math.trunc((evt.loaded / evt.total) * 100);
+	            //console.log(percentComplete);
+	            document.getElementById('progress').innerHTML='Cargado: ' + percentComplete + '%';
+	    } else {
+	            // Unable to compute progress information since the total size is unknown
+	            //console.log('unable to complete');
+	            document.getElementById('progress').innerHTML='unable to complete';
+	    }
+	}
+	//Fin Actualizacion de progreso carga
+
+	//Inicio registro de archivo
+	function RegFile(file, hash) {
+		var idinvestigacion, idarchivo;
+		
+		idinvestigacion=document.getElementById('idinvestigacion').value;
+		idarchivo=4;
+		//servicio de registracion
+		UploadFile(file, hash, idinvestigacion, idarchivo);
+	}
+	//Fin registro de archivo
+	
+	//Inicio upload file
+	function UploadFile(file, hash, idinvestigacion, idarchivo) 
+    {
+          var formData = new FormData($('#upload_form')[0]);
+          formData.append('idinvestigacion', idinvestigacion);
+          formData.append('idarchivo', idarchivo);
+          formData.append('file', file);
+
+          $.ajax({
+            url : 'rest/files/upload',
+            type : 'POST',
+            data : formData,
+            cache : false,
+            
+            xhr : function() {  // custom xhr
+                myXhr = $.ajaxSettings.xhr();
+                if(myXhr.upload){ // check if upload property exists
+                    myXhr.upload.addEventListener('progress', updateProgress, false); // for handling the progress of the upload
+                }
+                return myXhr;
+            },
+            
+            contentType : false,
+            processData : false,
+            
+            success : function(data, textStatus, jqXHR) {
+                  var message = jqXHR.responseText;
+                  $("#messages").append("<li>" + message + "</li>");
+            },
+            error : function(jqXHR, textStatus, errorThrown) {
+                  $("#messages").append("<li style='color: red;'>" + textStatus + "</li>");
+            }
+          });
+    }
+	//Fin upload file
+	
+	//Inicio Manejador del evento submit del form
+  $(document).ready(function() 
+  {
+    $("#uploadBtn").click(function() 
+    {
+      $('input[name="file"]').each(function(index, value) 
+      {    
+  	    var file = value.files[0];
+        if(file) {genChecksum(file);}  
+
+      });
+    });
+  });
+  //Fin Manejador del evento submit del form
+  </script>
+	
 </head>
 <body>
 	<nav class="navbar navbar-default">
@@ -61,18 +213,14 @@
 
 	<div class="container">
 		<h4 class="tituloPasoAsistente">SUBIR ARCHIVO</h4>
-		<form action="rest/files/upload" method="post"
-			enctype="multipart/form-data">
+		<form action="rest/files/upload" method="post" enctype="multipart/form-data" id="upload_form">
 			<div class="form-group">
-				<label>ID_Investigacion:</label> <input type="text"
-					name="idinvestigacion" value="1" class="form-control" />
+				<label>ID_Investigacion:</label>
+				<input type="text" name="idinvestigacion" value="1" class="form-control" />
 			</div>
 			<div class="form-group">
-				<label>Hash:</label> <input type="text" name="hash"
-					value="a85bc6f46b10357ad597888f97c1b7b8" class="form-control" />
-			</div>
-			<div class="form-group">
-				<label>Formato:</label> <select name="formato" class="form-control">
+				<label>Formato:</label>
+				<select name="formato" class="form-control">
                     <option value="IBD Longitud Fija">IBD Longitud Fija</option>
                     <option value="Movistar llamadas">Movistar llamadas</option>
                     <option value="Movistar sms">Movistar sms</option>
@@ -85,12 +233,14 @@
 				</select>
 			</div>
 			<div class="form-group">
-				<label>Archivo:</label> Seleccione el archivo: <input type="file"
-					name="file" size="50" class="form-control" />
+				<label>Archivo:</label>
+				<input type="file" name="file" size="50" class="form-control" />
 			</div>
 
-			<input type="submit" value="Upload It" />
+			<input id="uploadBtn" type="submit" value="Upload File" />
 		</form>
+		<h1 id="progress">Cargado: 0%</h1>
+		<ul id="messages"></ul>
 	</div>
 </body>
 </html>
