@@ -4,12 +4,7 @@ var Manager;
 
   $(function () {
     Manager = new AjaxSolr.Manager({
-      //solrUrl: 'http://reuters-demo.tree.ewdev.ca:9090/reuters/'
       solrUrl: 'http://lsi.no-ip.org:8983/solr/comunicaciones/'
-      // If you are using a local Solr instance with a "reuters" core, use:
-      // solrUrl: 'http://localhost:8983/solr/reuters/'
-      // If you are using a local Solr instance with a single core, use:
-      // solrUrl: 'http://localhost:8983/solr/'
     });
     Manager.addWidget(new AjaxSolr.ResultWidget({
       id: 'result',
@@ -79,7 +74,7 @@ var Manager;
     //json.nl=map&
     //wt=json&callback=?
 
-    Manager.store.addByValue('q', '*:*');
+    Manager.store.addByValue('q', 'ID_Investigacion:'+window.location.hash.substr(1));
     var params = {
       facet: true,
       'facet.field': [ 'Nro_Origen', 'Nro_Destino', 'Tipo_Comunicacion', 'Duracion', 'Celda_Origen' ],
