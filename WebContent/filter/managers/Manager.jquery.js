@@ -33,6 +33,10 @@ AjaxSolr.Manager = AjaxSolr.AbstractManager.extend(
     else {
       options.url = this.solrUrl + servlet + '?' + string + '&wt=json' + (disableJsonp ? '' : '&json.wrf=?');
     }
+
+    //hacer llamada ajax para guardar la url del filtro que está en options.url
+    alert("Query llamada: "+options.url)
+
     jQuery.ajax(options).done(handler).fail(errorHandler);
   }
 });
