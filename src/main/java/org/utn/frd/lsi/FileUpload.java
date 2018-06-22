@@ -65,7 +65,7 @@ import java.security.MessageDigest;
 public class FileUpload {
 
 	//private static final String SERVER_UPLOAD_LOCATION_FOLDER = "/root/glassfish4/glassfish/domains/domain1/test/";
-	private static final String SERVER_UPLOAD_LOCATION_FOLDER = "C:\\ibd\\";
+	private static final String SERVER_UPLOAD_LOCATION_FOLDER = "C:\\BigDataInvestiga\\";
 
 	@POST
 	@Path("/upload")
