@@ -35,7 +35,21 @@ AjaxSolr.Manager = AjaxSolr.AbstractManager.extend(
     }
 
     //hacer llamada ajax para guardar la url del filtro que está en options.url
-    alert("Query llamada: "+options.url)
+    //con su respetivo idUsuario, e idInvestigacion
+    var params = {};
+    params.url = options.url;
+    params.idInvestigacion = idInvestigacion;
+    params.idUsuario = idUsuario;
+
+    $.ajax({
+      url: //almacena query
+      data: params,
+      type: 'POST'
+    }).done(function() {
+      $(this).addClass('done');
+    });
+
+    //alert("Query llamada: "+options.url)
 
     jQuery.ajax(options).done(handler).fail(errorHandler);
   }
